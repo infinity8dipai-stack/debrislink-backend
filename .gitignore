@@ -1,0 +1,50 @@
+# =============================================================================
+# DebrisLink — Git exclusions
+# =============================================================================
+
+# --- Secrets — NEVER commit these ---
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# --- Local database files ---
+*.db
+*.sqlite
+*.sqlite3
+
+# --- Generated PDF certificates (regenerated at runtime) ---
+storage/certificates/*.pdf
+
+# --- Python bytecode / build artifacts ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+.eggs/
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- IDE / OS noise ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- Test / coverage / lint caches ---
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.tox/
+.DS_Store

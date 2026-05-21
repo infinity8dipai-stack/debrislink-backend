@@ -1,0 +1,60 @@
+# =============================================================================
+# DebrisLink — Docker build context exclusions
+# =============================================================================
+# Anything matched here is NOT shipped into the image. Goals:
+#   1. Don't bake local secrets into the container.
+#   2. Don't ship the laptop SQLite file — production uses managed Postgres.
+#   3. Keep the build context small for faster pushes.
+# =============================================================================
+
+# --- Python bytecode / build artifacts ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+.eggs/
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- Local secrets — production gets env vars from the cloud platform ---
+.env
+.env.*
+
+# --- Local database files ---
+*.db
+*.sqlite
+*.sqlite3
+
+# --- Generated artifacts (produced fresh at runtime by the certificate engine) ---
+storage/certificates/*.pdf
+
+# --- Version control ---
+.git/
+.gitignore
+.gitattributes
+
+# --- IDE / OS noise ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- Test / coverage / lint caches ---
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.tox/
+
+# --- Docker meta files (no need to ship them inside the image) ---
+Dockerfile
+.dockerignore

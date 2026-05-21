@@ -1,0 +1,87 @@
+# =============================================================================
+# DebrisLink — Render.com Deployment Blueprint
+# =============================================================================
+# Drop this file at the repo root and click "New > Blueprint" on Render.
+# It will provision the web service AND the managed PostgreSQL database
+# in one shot, link the DATABASE_URL automatically, and prompt you to
+# fill in the Meta WhatsApp secrets via the dashboard.
+#
+# Docs: https://render.com/docs/blueprint-spec
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # FastAPI web service (Docker-built from the Dockerfile at the repo root)
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: debrislink-api
+    runtime: docker
+    plan: starter                # Upgrade to `standard` for multi-instance HA.
+    branch: main
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true             # Re-deploy on every push to `main`.
+    healthCheckPath: /health     # Pings the DB; returns 503 if Postgres is down.
+
+    envVars:
+      # ---- Database (auto-wired from the resource defined below) ----
+      - key: DATABASE_URL
+        fromDatabase:
+          name: debrislink-db
+          property: connectionString
+
+      # ---- Meta WhatsApp Cloud API (set via Render dashboard) ----
+      - key: WHATSAPP_ACCESS_TOKEN
+        sync: false              # Marks the var as a secret — fill in via UI.
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_VERIFY_TOKEN
+        sync: false
+      - key: WHATSAPP_APP_SECRET
+        sync: false              # From Meta App → Settings → Basic → App Secret.
+      - key: WHATSAPP_API_VERSION
+        value: v21.0
+      - key: WHATSAPP_GRAPH_BASE_URL
+        value: https://graph.facebook.com
+      - key: WHATSAPP_DRY_RUN
+        value: "false"           # Flip to "true" if you stand up a staging service.
+
+      # ---- Media hosting & certificate hashing ----
+      - key: PUBLIC_MEDIA_BASE_URL
+        sync: false              # Your S3/CloudFront/R2 URL for compliance PDFs.
+      - key: DEBRISLINK_HASH_PEPPER
+        generateValue: true      # Render generates a strong random secret once.
+
+      # ---- Server tuning ----
+      - key: WEB_CONCURRENCY
+        value: "2"               # Bump to 4 once you upgrade to a larger plan.
+      - key: DB_POOL_SIZE
+        value: "5"
+      - key: DB_MAX_OVERFLOW
+        value: "10"
+      - key: DB_POOL_RECYCLE
+        value: "300"
+
+# =============================================================================
+# Managed PostgreSQL database
+# =============================================================================
+databases:
+  - name: debrislink-db
+    plan: starter                # 256 MB RAM / 1 GB storage — fine for MVP.
+    databaseName: debrislink
+    user: debrislink
+    # ipAllowList omitted ⇒ only internal Render services can reach it.
+
+# =============================================================================
+# Scaling notes (read this when you outgrow `starter`):
+# -----------------------------------------------------------------------------
+# 1. Vertical:   bump `plan:` on either resource for more CPU/RAM/storage.
+# 2. Horizontal: change the web service `plan:` to `standard` (or higher) and
+#                set `numInstances:` ≥ 2.  Uvicorn workers (WEB_CONCURRENCY)
+#                give you per-instance parallelism; numInstances gives you
+#                redundancy across machines.
+# 3. Storage:    storage/certificates/ is EPHEMERAL inside the container.
+#                Once you exceed the in-memory MVP, upload PDFs to S3/R2 and
+#                serve them from PUBLIC_MEDIA_BASE_URL so Meta can fetch them.
+# 4. Migrations: move schema management from `init_db()` to Alembic before
+#                production cutover so deploys don't race on table creation.
+# =============================================================================
