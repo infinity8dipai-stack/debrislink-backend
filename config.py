@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -49,6 +49,21 @@ class Settings(BaseSettings):
 
     # When true, outbound calls are short-circuited (no HTTP to Meta).
     whatsapp_dry_run: bool = True
+
+    @field_validator("whatsapp_dry_run", mode="before")
+    @classmethod
+    def _parse_dry_run(cls, value):
+        """
+        Tolerate any string Render/render.yaml might inject. Only the literal
+        strings 'true', '1', 'yes', 'on' (case-insensitive) flip dry-run ON.
+        Anything else — including random hashes from `generateValue: true` —
+        falls back to False so the app boots without crashing.
+        """
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            return value.strip().lower() in {"true", "1", "yes", "on"}
+        return False
 
     # ----------------------------------------------------------------
     # Public media hosting (Meta requires HTTPS URLs for documents)
