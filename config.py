@@ -34,10 +34,12 @@ class Settings(BaseSettings):
 
     # ----------------------------------------------------------------
     # Meta WhatsApp Cloud API
+    # Empty string = not configured yet (app still boots; WhatsApp
+    # features return errors only when actually invoked).
     # ----------------------------------------------------------------
-    whatsapp_access_token: str = Field(..., min_length=1)
-    whatsapp_phone_number_id: str = Field(..., min_length=1)
-    whatsapp_verify_token: str = Field(..., min_length=1)
+    whatsapp_access_token: str = ""
+    whatsapp_phone_number_id: str = ""
+    whatsapp_verify_token: str = "debrislink-hook-secret"
     whatsapp_api_version: str = "v21.0"
     whatsapp_graph_base_url: str = "https://graph.facebook.com"
 
@@ -46,7 +48,7 @@ class Settings(BaseSettings):
     whatsapp_app_secret: str = ""
 
     # When true, outbound calls are short-circuited (no HTTP to Meta).
-    whatsapp_dry_run: bool = False
+    whatsapp_dry_run: bool = True
 
     # ----------------------------------------------------------------
     # Public media hosting (Meta requires HTTPS URLs for documents)
