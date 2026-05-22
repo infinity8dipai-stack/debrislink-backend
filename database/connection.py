@@ -50,6 +50,16 @@ def _resolve_database_url() -> str:
     if url.startswith("postgres://"):
         url = "postgresql://" + url[len("postgres://"):]
 
+    # Guard: catch the common mistake of pasting a Supabase/Render *API*
+    # URL (https://...) instead of the database connection string.
+    _VALID_SCHEMES = ("postgresql://", "postgres://", "sqlite://")
+    if not any(url.startswith(s) for s in _VALID_SCHEMES):
+        raise ValueError(
+            f"DATABASE_URL must start with 'postgresql://' (got: {url[:40]!r}). "
+            "In Supabase: Settings → Database → Connection string → URI tab. "
+            "In Render: Settings → Environment → DATABASE_URL."
+        )
+
     return url
 
 
